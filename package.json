@@ -1,6 +1,7 @@
 {
     "name": "swipc-support",
     "displayName": "swipc-support",
+    "publisher": "roblabla",
     "description": "Adds syntax highlighting for SwIPC IDL files",
     "version": "0.0.1",
     "engines": {
