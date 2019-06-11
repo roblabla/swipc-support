@@ -1,0 +1,353 @@
+# Created with https://eeyo.io/iro/
+
+name                   = swipc
+file_extensions []     = id;
+
+################################################################
+## Constants
+################################################################
+
+__NAMESPACE \= [a-zA-Z0-9:_]+
+
+################################################################
+## Styles
+################################################################
+
+styles [] {
+
+.comment : style {
+   color                 = light_green
+   italic                = true
+   ace_scope             = comment
+   textmate_scope        = comment
+   pygments_scope        = Comment
+}
+
+.keyword : style {
+   color     = cyan
+   ace_scope             = keyword
+   textmate_scope        = keyword
+   pygments_scope        = Keyword
+}
+
+.numeric : style {
+   color                 = gold
+   ace_scope             = constant.numeric
+   textmate_scope        = constant.numeric
+   pygments_scope        = Number
+}
+
+.punctuation : style {
+   color     = red_2
+   ace_scope             = punctuation
+   textmate_scope        = punctuation
+   pygments_scope        = Punctuation
+}
+
+.text : style {
+   color                 = brown
+   ace_scope             = text
+   textmate_scope        = text
+   pygments_scope        = String
+}
+
+.illegal : style {
+   color                 = white
+   background_color      = red
+   ace_scope             = invalid
+   textmate_scope        = invalid
+   pygments_scope        = Generic.Error
+}
+
+.typename : style {
+   color                 = blue
+   textmate_scope        = entity.name.type
+   pygments_scope        = Name.Namespace
+}
+
+.whitespace : style {
+}
+
+.var : style {
+   color                 = white
+   textmate_scope        = variable.other
+   pygments_scope        = Name.Variable
+}
+
+.func : style {
+   color                 = yellow
+   textmate_scope        = entity.name.function
+   pygments_scope        = Name.Function
+}
+
+.decorator : style {
+   color                = cyan
+   textmate_scope       = entity.name.function.decorator
+   pygments_scope        = Name.Decorator
+}
+}
+
+#################################################
+## Parse contexts
+#################################################
+
+contexts [] {
+
+##############################################
+## Main Context - Entry point context
+##############################################
+
+main : context {
+   : inline_push {
+      regex          \= (type)
+      styles []       = .keyword;
+      : pop {
+         regex       \= (;)
+         styles []    = .punctuation;
+      }
+      : include "struct" ;
+      #: include "enum" ;
+      : pattern {
+         regex       \= ($${__NAMESPACE})
+         styles []    = .typename;
+      }
+   }
+   : inline_push {
+      regex          \= (interface)(\s+)($${__NAMESPACE})(\s*)(is)?([@a-zA-Z0-9-:_ ,]+)?(\{)
+      styles []       = .keyword, .whitespace, .typename, .whitespace, .keyword, .var, .punctuation;
+      : pop {
+         regex      \= (\})
+         styles []    = .punctuation;
+      }
+      : include "interface";
+   }
+   
+   : pattern {
+      regex \= (interface|type)
+      styles [] = .keyword;
+   }
+   
+   : include "decorator" ;
+   
+   : include "numeric" ;
+   
+   : inline_push {
+      regex          \= (\{)
+      styles []       = .punctuation;
+      : pop {  
+         regex       \= (\})
+         styles []    = .punctuation;
+      }
+      : include "main" ;
+   }
+   
+   : pattern {
+      regex          \= (;)
+      styles []       = .punctuation;
+   }
+   
+   : inline_push {
+      regex          \= (\")
+      styles []       = .punctuation;
+      default_style   = .text
+      : pop {
+         regex       \= (\")
+         styles []    = .punctuation;
+      }
+   }
+   
+   : inline_push {
+      regex          \= (\[)
+      styles []       = .punctuation;
+      : pop {
+         regex       \= (\])
+         styles []    = .punctuation;
+      }
+      : include "numeric" ;
+      : pattern {
+         regex          \= ([^\s])
+         styles []       = .illegal;
+      }
+   }
+   
+   : include "multi_line_comment" ;
+      
+   : pattern {
+      regex          \= (#.*)
+      styles []       = .comment;
+   }
+   
+   : pattern {
+      regex          \= (//.*)
+      styles []       = .comment;
+   }
+   
+   : pattern {
+      regex          \= ([^\s])
+      styles []       = .text;
+   }
+   
+}
+
+interface : context {
+   : inline_push {
+      regex         \= (\[)
+      styles []      = .punctuation;
+      : pop {
+         regex      \= (\])
+         styles []   = .punctuation;
+      }
+      : include "numeric" ;
+      : pattern {
+         regex          \= ([^\s])
+         styles []       = .illegal;
+      }      
+   }
+   
+   : include "numeric" ;
+
+   : include "decorator" ;
+   
+   : inline_push {
+      regex          \= (\()
+      styles []       = .punctuation;
+      : pop {
+         regex       \= (\))
+         styles []    = .punctuation;
+      }
+      : include "arguments" ;
+   }
+   
+   
+   : inline_push {
+      regex       \= (->)
+      styles []    = .punctuation;
+      : pop {
+         regex       \= (;)
+         styles []    = .punctuation;
+      }
+      : include "arguments" ;
+   }
+   
+   : pattern {
+      regex       \= (;)
+      styles []    = .punctuation;
+   }
+   
+   : pattern {
+      regex         \= ([a-zA-Z0-9_]+)
+      styles []      = .func;
+   }
+   
+   : include "multi_line_comment" ;
+   
+   : pattern {
+      regex          \= (#.*)
+      styles []       = .comment;
+   }
+}
+
+typenamepair : context {
+   : inline_push {
+      regex       \= ($${__NAMESPACE})(<)
+      styles []    = .typename, .punctuation;
+      : pop {
+         regex       \= (>)((\s*[a-zA-Z0-9_]+)?)
+         styles []    = .punctuation, .var, .var;
+      }
+      : include "numeric" ;
+      : pattern {
+         regex      \= (,)
+         styles []   = .punctuation;
+      }
+      : pattern {
+         regex      \= ([a-zA-Z0-9_:]+)
+         styles []   = .keyword;
+      }
+   }
+   : pattern {
+      regex       \= ($${__NAMESPACE})(\s*([a-zA-Z_0-9]+)?)
+      styles []    = .typename, .var, .var;
+   }
+}
+
+# Argument/Return context
+arguments : context {
+   : include "typenamepair" ;
+   : pattern {
+      regex       \= ($${__NAMESPACE})
+      styles []    = .typename;
+   }
+   : pattern {
+      regex       \= (,)
+      styles []    = .punctuation;
+   }
+}
+
+decorator : context {
+   : inline_push {
+      regex          \= (@[a-z]+)(\()
+      styles []       = .decorator, .punctuation;
+      default_style   = .text
+      : pop {
+         regex       \= (\))
+         styles []    = .punctuation;
+      }
+   }
+   
+   : pattern {
+      regex          \= (@[a-z]+)
+      styles []       = .decorator;
+   }
+}
+
+struct : context {
+   : pattern {
+      regex          \= (struct)
+      styles []       = .keyword;
+   }
+   : inline_push {
+      regex          \= (\{)
+      styles []       = .punctuation;
+      : pop {
+         regex       \= (\})
+         styles []    = .punctuation;
+      }
+      : pattern {
+         regex       \= (;)
+         styles []    = .punctuation;
+      }
+      : include "typenamepair" ;
+      
+   }
+}
+
+###########################################
+## Numeric Context
+###########################################
+
+numeric : context {
+   : pattern {
+      regex          \= (\b(0x[0-9a-fA-F]+)|\d+)
+      styles []       = .numeric;
+   }
+}
+
+###########################################
+## Multi Line Comment Context
+###########################################
+
+multi_line_comment : context {
+   description        = multiline
+   : inline_push {
+      regex          \= (/\*)
+      styles []       = .comment;
+      default_style   = .comment
+      : pop {
+         regex       \= (\*/)
+         styles []    = .comment;
+      }
+   }
+}
+   
+}

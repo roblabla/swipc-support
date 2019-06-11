@@ -1,0 +1,26 @@
+{
+    "name": "swipc-support",
+    "displayName": "swipc-support",
+    "description": "Adds syntax highlighting for SwIPC IDL files",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.35.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "repository": "https://github.com/roblabla/swipc-support",
+    "contributes": {
+        "languages": [{
+            "id": "swipc",
+            "aliases": ["SwIPC", "swipc"],
+            "extensions": [".id"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "swipc",
+            "scopeName": "source.swipc",
+            "path": "./syntaxes/swipc.tmLanguage"
+        }]
+    }
+}
